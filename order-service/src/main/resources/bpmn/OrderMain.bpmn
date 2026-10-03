@@ -84,7 +84,7 @@
     <bpmn:sequenceFlow id="Flow_5" sourceRef="Payment" targetRef="AwaitPayment" />
     <bpmn:sequenceFlow id="Flow_6" sourceRef="AwaitPayment" targetRef="PaidGateway" />
     <bpmn:sequenceFlow id="Flow_yes" name="yes" sourceRef="PaidGateway" targetRef="NotifyCustomer">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paid}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paid &amp;&amp; amount &gt; 0 &amp;&amp; (segment == "REGULAR" || loyaltyYears &gt;= 2)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_no" name="no" sourceRef="PaidGateway" targetRef="CancelOrder" />
     <bpmn:sequenceFlow id="Flow_7" sourceRef="NotifyCustomer" targetRef="OrderDone" />

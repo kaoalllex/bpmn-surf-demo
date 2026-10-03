@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_subscriptionrenewal" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0">
+  <bpmn:process id="SubscriptionRenewalProcess" name="Subscription renewal" isExecutable="true">
+    <bpmn:startEvent id="MonthlyRenewal" name="Every month">
+      <bpmn:outgoing>Flow_s1</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_renewal">
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/P1M</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="PrepareInvoice" name="Prepare the invoice" camunda:asyncBefore="true" camunda:type="external" camunda:topic="prepareInvoice">
+      <bpmn:incoming>Flow_s1</bpmn:incoming>
+      <bpmn:outgoing>Flow_s2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="RenewalPayment" name="Payment" calledElement="PaymentProcess">
+      <bpmn:extensionElements>
+        <camunda:in source="subscriptionId" target="orderId" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_s2</bpmn:incoming>
+      <bpmn:outgoing>Flow_s3</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="RenewalDone" name="Renewed">
+      <bpmn:incoming>Flow_s3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_s1" sourceRef="MonthlyRenewal" targetRef="PrepareInvoice" />
+    <bpmn:sequenceFlow id="Flow_s2" sourceRef="PrepareInvoice" targetRef="RenewalPayment" />
+    <bpmn:sequenceFlow id="Flow_s3" sourceRef="RenewalPayment" targetRef="RenewalDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="SubscriptionRenewalProcess">
+      <bpmndi:BPMNShape id="MonthlyRenewal_di" bpmnElement="MonthlyRenewal">
+        <dc:Bounds x="182" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PrepareInvoice_di" bpmnElement="PrepareInvoice">
+        <dc:Bounds x="260" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RenewalPayment_di" bpmnElement="RenewalPayment">
+        <dc:Bounds x="420" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RenewalDone_di" bpmnElement="RenewalDone">
+        <dc:Bounds x="582" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_s1_di" bpmnElement="Flow_s1">
+        <di:waypoint x="218" y="160" />
+        <di:waypoint x="260" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_s2_di" bpmnElement="Flow_s2">
+        <di:waypoint x="360" y="160" />
+        <di:waypoint x="420" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_s3_di" bpmnElement="Flow_s3">
+        <di:waypoint x="520" y="160" />
+        <di:waypoint x="582" y="160" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

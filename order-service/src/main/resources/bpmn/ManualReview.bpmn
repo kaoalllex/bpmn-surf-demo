@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_manualreview" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0">
+  <bpmn:process id="ManualReviewProcess" name="Manual review" isExecutable="true">
+    <bpmn:startEvent id="StartReview" name="Review requested">
+      <bpmn:outgoing>Flow_r1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="ReviewPayment" name="Review the payment" camunda:candidateGroups="risk-officers">
+      <bpmn:incoming>Flow_r1</bpmn:incoming>
+      <bpmn:outgoing>Flow_r2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="ApprovedGateway" name="Approved?" default="Flow_r_no">
+      <bpmn:incoming>Flow_r2</bpmn:incoming>
+      <bpmn:outgoing>Flow_r_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_r_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="ReviewApproved" name="Approved">
+      <bpmn:incoming>Flow_r_yes</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="ReviewRejected" name="Rejected">
+      <bpmn:incoming>Flow_r_no</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_r1" sourceRef="StartReview" targetRef="ReviewPayment" />
+    <bpmn:sequenceFlow id="Flow_r2" sourceRef="ReviewPayment" targetRef="ApprovedGateway" />
+    <bpmn:sequenceFlow id="Flow_r_yes" name="yes" sourceRef="ApprovedGateway" targetRef="ReviewApproved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_r_no" name="no" sourceRef="ApprovedGateway" targetRef="ReviewRejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ManualReviewProcess">
+      <bpmndi:BPMNShape id="StartReview_di" bpmnElement="StartReview">
+        <dc:Bounds x="182" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewPayment_di" bpmnElement="ReviewPayment">
+        <dc:Bounds x="260" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ApprovedGateway_di" bpmnElement="ApprovedGateway" isMarkerVisible="true">
+        <dc:Bounds x="420" y="135" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="420" y="112" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewApproved_di" bpmnElement="ReviewApproved">
+        <dc:Bounds x="522" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewRejected_di" bpmnElement="ReviewRejected">
+        <dc:Bounds x="522" y="262" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_r1_di" bpmnElement="Flow_r1">
+        <di:waypoint x="218" y="160" />
+        <di:waypoint x="260" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r2_di" bpmnElement="Flow_r2">
+        <di:waypoint x="360" y="160" />
+        <di:waypoint x="420" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_yes_di" bpmnElement="Flow_r_yes">
+        <di:waypoint x="470" y="160" />
+        <di:waypoint x="522" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r_no_di" bpmnElement="Flow_r_no">
+        <di:waypoint x="445" y="185" />
+        <di:waypoint x="445" y="280" />
+        <di:waypoint x="522" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
