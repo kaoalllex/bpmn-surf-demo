@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_ordermain" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0">
+  <bpmn:message id="Message_OrderPaid" name="OrderPaid" />
+  <bpmn:collaboration id="Collaboration_ordermain">
+    <bpmn:participant id="Participant_Order" name="Order processing" processRef="OrderMainProcess" />
+    <bpmn:participant id="Participant_CRM" name="CRM" />
+    <bpmn:participant id="Participant_Kafka" name="Kafka: order.payments" />
+    <bpmn:messageFlow id="MessageFlow_order" name="new order" sourceRef="Participant_CRM" targetRef="StartOrder" />
+    <bpmn:messageFlow id="MessageFlow_paid" name="OrderPaid" sourceRef="Participant_Kafka" targetRef="AwaitPayment" />
+  </bpmn:collaboration>
+  <bpmn:process id="OrderMainProcess" name="Order processing" isExecutable="true">
+    <bpmn:startEvent id="StartOrder" name="Order received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="ValidateOrder" name="Validate the order" camunda:asyncBefore="true" camunda:type="external" camunda:topic="validateOrder">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="orderId">${orderId}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="CheckFraud" name="Check for fraud" camunda:asyncBefore="true" camunda:type="external" camunda:topic="checkFraud">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:subProcess id="ReserveStock" name="Reserve stock">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:startEvent id="ReserveStart">
+        <bpmn:outgoing>Flow_r1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="ReserveItems" name="Reserve the items" camunda:type="external" camunda:topic="reserveItems">
+        <bpmn:incoming>Flow_r1</bpmn:incoming>
+        <bpmn:outgoing>Flow_r2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="ConfirmReservation" name="Confirm the reservation" camunda:type="external" camunda:topic="confirmReservation">
+        <bpmn:incoming>Flow_r2</bpmn:incoming>
+        <bpmn:outgoing>Flow_r3</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="ReserveEnd">
+        <bpmn:incoming>Flow_r3</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_r1" sourceRef="ReserveStart" targetRef="ReserveItems" />
+      <bpmn:sequenceFlow id="Flow_r2" sourceRef="ReserveItems" targetRef="ConfirmReservation" />
+      <bpmn:sequenceFlow id="Flow_r3" sourceRef="ConfirmReservation" targetRef="ReserveEnd" />
+    </bpmn:subProcess>
+    <bpmn:callActivity id="Payment" name="Payment" camunda:asyncBefore="true" calledElement="PaymentProcess">
+      <bpmn:extensionElements>
+        <camunda:in source="orderId" target="orderId" />
+        <camunda:in source="amount" target="amount" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:receiveTask id="AwaitPayment" name="Wait for the payment" messageRef="Message_OrderPaid">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:exclusiveGateway id="PaidGateway" name="Paid?" default="Flow_no">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_no</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="NotifyCustomer" name="Notify the customer" camunda:type="external" camunda:topic="notifyCustomer">
+      <bpmn:incoming>Flow_yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="CancelOrder" name="Cancel the order" camunda:type="external" camunda:topic="cancelOrder">
+      <bpmn:incoming>Flow_no</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="OrderDone" name="Order completed">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="OrderCancelled" name="Order cancelled">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartOrder" targetRef="ValidateOrder" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="ValidateOrder" targetRef="CheckFraud" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="CheckFraud" targetRef="ReserveStock" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="ReserveStock" targetRef="Payment" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Payment" targetRef="AwaitPayment" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="AwaitPayment" targetRef="PaidGateway" />
+    <bpmn:sequenceFlow id="Flow_yes" name="yes" sourceRef="PaidGateway" targetRef="NotifyCustomer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paid}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_no" name="no" sourceRef="PaidGateway" targetRef="CancelOrder" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="NotifyCustomer" targetRef="OrderDone" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="CancelOrder" targetRef="OrderCancelled" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_ordermain">
+      <bpmndi:BPMNShape id="Participant_Order_di" bpmnElement="Participant_Order" isHorizontal="true">
+        <dc:Bounds x="130" y="110" width="1290" height="350" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_CRM_di" bpmnElement="Participant_CRM" isHorizontal="true">
+        <dc:Bounds x="130" y="10" width="1290" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Kafka_di" bpmnElement="Participant_Kafka" isHorizontal="true">
+        <dc:Bounds x="130" y="500" width="1290" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartOrder_di" bpmnElement="StartOrder">
+        <dc:Bounds x="182" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ValidateOrder_di" bpmnElement="ValidateOrder">
+        <dc:Bounds x="260" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CheckFraud_di" bpmnElement="CheckFraud">
+        <dc:Bounds x="420" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReserveStock_di" bpmnElement="ReserveStock" isExpanded="false">
+        <dc:Bounds x="580" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Payment_di" bpmnElement="Payment">
+        <dc:Bounds x="740" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AwaitPayment_di" bpmnElement="AwaitPayment">
+        <dc:Bounds x="900" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="PaidGateway_di" bpmnElement="PaidGateway" isMarkerVisible="true">
+        <dc:Bounds x="1060" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1071" y="172" width="29" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NotifyCustomer_di" bpmnElement="NotifyCustomer">
+        <dc:Bounds x="1160" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CancelOrder_di" bpmnElement="CancelOrder">
+        <dc:Bounds x="1160" y="330" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OrderDone_di" bpmnElement="OrderDone">
+        <dc:Bounds x="1322" y="202" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OrderCancelled_di" bpmnElement="OrderCancelled">
+        <dc:Bounds x="1322" y="352" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="218" y="220" />
+        <di:waypoint x="260" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="360" y="220" />
+        <di:waypoint x="420" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="520" y="220" />
+        <di:waypoint x="580" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="680" y="220" />
+        <di:waypoint x="740" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="840" y="220" />
+        <di:waypoint x="900" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1000" y="220" />
+        <di:waypoint x="1060" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_yes_di" bpmnElement="Flow_yes">
+        <di:waypoint x="1110" y="220" />
+        <di:waypoint x="1160" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_no_di" bpmnElement="Flow_no">
+        <di:waypoint x="1085" y="245" />
+        <di:waypoint x="1085" y="370" />
+        <di:waypoint x="1160" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1260" y="220" />
+        <di:waypoint x="1322" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1260" y="370" />
+        <di:waypoint x="1322" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_order_di" bpmnElement="MessageFlow_order">
+        <di:waypoint x="200" y="70" />
+        <di:waypoint x="200" y="202" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="208" y="128" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_paid_di" bpmnElement="MessageFlow_paid">
+        <di:waypoint x="950" y="500" />
+        <di:waypoint x="950" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="958" y="420" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ReserveStock">
+    <bpmndi:BPMNPlane id="BPMNPlane_ReserveStock" bpmnElement="ReserveStock">
+      <bpmndi:BPMNShape id="ReserveStart_di" bpmnElement="ReserveStart">
+        <dc:Bounds x="180" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReserveItems_di" bpmnElement="ReserveItems">
+        <dc:Bounds x="260" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ConfirmReservation_di" bpmnElement="ConfirmReservation">
+        <dc:Bounds x="420" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReserveEnd_di" bpmnElement="ReserveEnd">
+        <dc:Bounds x="582" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_r1_di" bpmnElement="Flow_r1">
+        <di:waypoint x="216" y="120" />
+        <di:waypoint x="260" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r2_di" bpmnElement="Flow_r2">
+        <di:waypoint x="360" y="120" />
+        <di:waypoint x="420" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r3_di" bpmnElement="Flow_r3">
+        <di:waypoint x="520" y="120" />
+        <di:waypoint x="582" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

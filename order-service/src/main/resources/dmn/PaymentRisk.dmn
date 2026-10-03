@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_paymentrisk" name="Payment risk" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.49.0">
+  <decision id="PaymentRisk" name="Payment risk">
+    <decisionTable id="DecisionTable_PaymentRisk" hitPolicy="FIRST">
+      <input id="Input_amount" label="Amount">
+        <inputExpression id="InputExpression_amount" typeRef="double"><text>amount</text></inputExpression>
+      </input>
+      <input id="Input_segment" label="Customer segment">
+        <inputExpression id="InputExpression_segment" typeRef="string"><text>customerSegment</text></inputExpression>
+      </input>
+      <output id="Output_risk" label="Risk level" name="riskLevel" typeRef="string" />
+      <rule id="Rule_1">
+        <inputEntry id="InputEntry_1_amount"><text>&lt; 1000</text></inputEntry>
+        <inputEntry id="InputEntry_1_segment"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_1_risk"><text>&quot;LOW&quot;</text></outputEntry>
+      </rule>
+      <rule id="Rule_2">
+        <inputEntry id="InputEntry_2_amount"><text>[1000..10000]</text></inputEntry>
+        <inputEntry id="InputEntry_2_segment"><text>&quot;REGULAR&quot;</text></inputEntry>
+        <outputEntry id="OutputEntry_2_risk"><text>&quot;MEDIUM&quot;</text></outputEntry>
+      </rule>
+      <rule id="Rule_3">
+        <inputEntry id="InputEntry_3_amount"><text>&gt; 10000</text></inputEntry>
+        <inputEntry id="InputEntry_3_segment"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_3_risk"><text>&quot;HIGH&quot;</text></outputEntry>
+      </rule>
+      <rule id="Rule_4">
+        <inputEntry id="InputEntry_4_amount"><text>&gt;= 1000</text></inputEntry>
+        <inputEntry id="InputEntry_4_segment"><text>&quot;NEW&quot;</text></inputEntry>
+        <outputEntry id="OutputEntry_4_risk"><text>&quot;HIGH&quot;</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_PaymentRisk" dmnElementRef="PaymentRisk"><dc:Bounds height="80" width="180" x="160" y="100" /></dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
