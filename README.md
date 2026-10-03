@@ -10,7 +10,8 @@ renders and diffs BPMN and DMN diagrams right in GitLab.
 - `order-service/src/main/resources/dmn/PaymentRisk.dmn` — the risk decision
   `Payment.bpmn` calls.
 - `order-service/src/main/kotlin/` — external task handlers
-  (`@ExternalTaskSubscription`) and the Kafka listener that correlates `OrderPaid`.
+  (`@ExternalTaskSubscription`) and the Kafka listener that reports the payment back to
+  the waiting process.
 
 With the extension installed, open the open merge request → **Changes** and press
 **Schema diff** on `OrderMain.bpmn`, or open any `.bpmn` file and press
