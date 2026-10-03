@@ -93,13 +93,13 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_ordermain">
       <bpmndi:BPMNShape id="Participant_Order_di" bpmnElement="Participant_Order" isHorizontal="true">
-        <dc:Bounds x="130" y="110" width="1110" height="350" />
+        <dc:Bounds x="130" y="110" width="1200" height="350" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_CRM_di" bpmnElement="Participant_CRM" isHorizontal="true">
-        <dc:Bounds x="130" y="10" width="1110" height="60" />
+        <dc:Bounds x="130" y="10" width="1200" height="60" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_Kafka_di" bpmnElement="Participant_Kafka" isHorizontal="true">
-        <dc:Bounds x="130" y="500" width="1110" height="60" />
+        <dc:Bounds x="130" y="500" width="1200" height="60" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartOrder_di" bpmnElement="StartOrder">
         <dc:Bounds x="172" y="202" width="36" height="36" />
