@@ -12,16 +12,18 @@
     <bpmn:startEvent id="StartOrder" name="Order received">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="ValidateOrder" name="Validate the order" camunda:asyncBefore="true" camunda:type="external" camunda:topic="validateOrder">
+    <bpmn:serviceTask id="ValidateOrder" name="Validate the order and screen for fraud" camunda:type="external" camunda:topic="validateOrder">
       <bpmn:extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="orderId">${orderId}</camunda:inputParameter>
+          <camunda:inputParameter name="fraudThreshold">0.8</camunda:inputParameter>
+          <camunda:outputParameter name="fraudScore">${fraudScore}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="CheckFraud" name="Check for fraud" camunda:asyncBefore="true" camunda:type="external" camunda:topic="checkFraud">
+    <bpmn:serviceTask id="ApplyExpressShipping" name="Apply express shipping" camunda:asyncBefore="true" camunda:type="external" camunda:topic="applyExpressShipping">
       <bpmn:incoming>Flow_2</bpmn:incoming>
       <bpmn:outgoing>Flow_3</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -37,6 +39,10 @@
       </bpmn:serviceTask>
       <bpmn:serviceTask id="ConfirmReservation" name="Confirm the reservation" camunda:type="external" camunda:topic="confirmReservation">
         <bpmn:incoming>Flow_r2</bpmn:incoming>
+        <bpmn:outgoing>Flow_r4</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="NotifyWarehouse" name="Notify the warehouse" camunda:type="external" camunda:topic="notifyWarehouse">
+        <bpmn:incoming>Flow_r4</bpmn:incoming>
         <bpmn:outgoing>Flow_r3</bpmn:outgoing>
       </bpmn:serviceTask>
       <bpmn:endEvent id="ReserveEnd">
@@ -44,7 +50,8 @@
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="Flow_r1" sourceRef="ReserveStart" targetRef="ReserveItems" />
       <bpmn:sequenceFlow id="Flow_r2" sourceRef="ReserveItems" targetRef="ConfirmReservation" />
-      <bpmn:sequenceFlow id="Flow_r3" sourceRef="ConfirmReservation" targetRef="ReserveEnd" />
+      <bpmn:sequenceFlow id="Flow_r4" sourceRef="ConfirmReservation" targetRef="NotifyWarehouse" />
+      <bpmn:sequenceFlow id="Flow_r3" sourceRef="NotifyWarehouse" targetRef="ReserveEnd" />
     </bpmn:subProcess>
     <bpmn:callActivity id="Payment" name="Payment" camunda:asyncBefore="true" calledElement="PaymentProcess">
       <bpmn:extensionElements>
@@ -67,10 +74,10 @@
       <bpmn:incoming>Flow_yes</bpmn:incoming>
       <bpmn:outgoing>Flow_7</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="CancelOrder" name="Cancel the order" camunda:type="external" camunda:topic="cancelOrder">
+    <bpmn:userTask id="CancelOrder" name="Cancel the order" camunda:candidateGroups="support">
       <bpmn:incoming>Flow_no</bpmn:incoming>
       <bpmn:outgoing>Flow_8</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:userTask>
     <bpmn:endEvent id="OrderDone" name="Order completed">
       <bpmn:incoming>Flow_7</bpmn:incoming>
     </bpmn:endEvent>
@@ -78,13 +85,13 @@
       <bpmn:incoming>Flow_8</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1" sourceRef="StartOrder" targetRef="ValidateOrder" />
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="ValidateOrder" targetRef="CheckFraud" />
-    <bpmn:sequenceFlow id="Flow_3" sourceRef="CheckFraud" targetRef="ReserveStock" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="ValidateOrder" targetRef="ApplyExpressShipping" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="ApplyExpressShipping" targetRef="ReserveStock" />
     <bpmn:sequenceFlow id="Flow_4" sourceRef="ReserveStock" targetRef="Payment" />
     <bpmn:sequenceFlow id="Flow_5" sourceRef="Payment" targetRef="AwaitPayment" />
     <bpmn:sequenceFlow id="Flow_6" sourceRef="AwaitPayment" targetRef="PaidGateway" />
     <bpmn:sequenceFlow id="Flow_yes" name="yes" sourceRef="PaidGateway" targetRef="NotifyCustomer">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paid &amp;&amp; amount &gt; 0 &amp;&amp; (segment == "REGULAR" || loyaltyYears &gt;= 2)}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paid &amp;&amp; amount &gt; 0 &amp;&amp; !fraudSuspected &amp;&amp; (segment == "REGULAR" || loyaltyYears &gt;= 1)}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_no" name="no" sourceRef="PaidGateway" targetRef="CancelOrder" />
     <bpmn:sequenceFlow id="Flow_7" sourceRef="NotifyCustomer" targetRef="OrderDone" />
@@ -107,7 +114,7 @@
       <bpmndi:BPMNShape id="ValidateOrder_di" bpmnElement="ValidateOrder">
         <dc:Bounds x="240" y="180" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="CheckFraud_di" bpmnElement="CheckFraud">
+      <bpmndi:BPMNShape id="ApplyExpressShipping_di" bpmnElement="ApplyExpressShipping">
         <dc:Bounds x="380" y="180" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReserveStock_di" bpmnElement="ReserveStock" isExpanded="false">
@@ -205,8 +212,11 @@
       <bpmndi:BPMNShape id="ConfirmReservation_di" bpmnElement="ConfirmReservation">
         <dc:Bounds x="420" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NotifyWarehouse_di" bpmnElement="NotifyWarehouse">
+        <dc:Bounds x="580" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ReserveEnd_di" bpmnElement="ReserveEnd">
-        <dc:Bounds x="582" y="102" width="36" height="36" />
+        <dc:Bounds x="742" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_r1_di" bpmnElement="Flow_r1">
         <di:waypoint x="216" y="120" />
@@ -216,9 +226,13 @@
         <di:waypoint x="360" y="120" />
         <di:waypoint x="420" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_r3_di" bpmnElement="Flow_r3">
+      <bpmndi:BPMNEdge id="Flow_r4_di" bpmnElement="Flow_r4">
         <di:waypoint x="520" y="120" />
-        <di:waypoint x="582" y="120" />
+        <di:waypoint x="580" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_r3_di" bpmnElement="Flow_r3">
+        <di:waypoint x="680" y="120" />
+        <di:waypoint x="742" y="120" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

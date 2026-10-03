@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component
 @Component
 @ExternalTaskSubscription("validateOrder")
 class ValidateOrderHandler(
-    private val orderRepository: OrderRepository
+    private val orderRepository: OrderRepository,
+    private val fraudScoring: FraudScoring
 ) : ExternalTaskHandler {
 
     override fun execute(task: ExternalTask, service: ExternalTaskService) {
@@ -17,7 +18,13 @@ class ValidateOrderHandler(
         val order = orderRepository.find(orderId)
             ?: return service.handleBpmnError(task, "ORDER_NOT_FOUND")
 
+        val fraudScore = fraudScoring.score(order)
+        val threshold = task.getVariable<Double>("fraudThreshold")
+        if (fraudScore > threshold) {
+            return service.handleBpmnError(task, "FRAUD_SUSPECTED")
+        }
+
         val valid = order.positions.isNotEmpty() && order.total > 0
-        service.complete(task, mapOf("orderValid" to valid))
+        service.complete(task, mapOf("orderValid" to valid, "fraudScore" to fraudScore))
     }
 }

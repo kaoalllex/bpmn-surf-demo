@@ -30,3 +30,15 @@ class ConfirmReservationHandler(
         service.complete(task)
     }
 }
+
+@Component
+@ExternalTaskSubscription("notifyWarehouse")
+class NotifyWarehouseHandler(
+    private val warehouse: Warehouse
+) : ExternalTaskHandler {
+
+    override fun execute(task: ExternalTask, service: ExternalTaskService) {
+        warehouse.notifyPicking(task.getVariable("orderId"))
+        service.complete(task)
+    }
+}

@@ -13,7 +13,7 @@ class ChargeCustomerHandler(
 ) : ExternalTaskHandler {
 
     override fun execute(task: ExternalTask, service: ExternalTaskService) {
-        payments.charge(task.getVariable("orderId"), task.getVariable("amount"))
+        payments.charge(task.getVariable("orderId"), task.getVariable("amount"), task.getVariable("currency"))
         service.complete(task)
     }
 }

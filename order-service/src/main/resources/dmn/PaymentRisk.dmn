@@ -9,18 +9,23 @@
         <inputExpression id="InputExpression_segment" typeRef="string"><text>customerSegment</text></inputExpression>
       </input>
       <output id="Output_risk" label="Risk level" name="riskLevel" typeRef="string" />
+      <rule id="Rule_5">
+        <inputEntry id="InputEntry_5_amount"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_5_segment"><text>&quot;BLOCKED&quot;</text></inputEntry>
+        <outputEntry id="OutputEntry_5_risk"><text>&quot;HIGH&quot;</text></outputEntry>
+      </rule>
       <rule id="Rule_1">
         <inputEntry id="InputEntry_1_amount"><text>&lt; 1000</text></inputEntry>
         <inputEntry id="InputEntry_1_segment"><text>-</text></inputEntry>
         <outputEntry id="OutputEntry_1_risk"><text>&quot;LOW&quot;</text></outputEntry>
       </rule>
       <rule id="Rule_2">
-        <inputEntry id="InputEntry_2_amount"><text>[1000..10000]</text></inputEntry>
+        <inputEntry id="InputEntry_2_amount"><text>[1000..5000]</text></inputEntry>
         <inputEntry id="InputEntry_2_segment"><text>&quot;REGULAR&quot;</text></inputEntry>
         <outputEntry id="OutputEntry_2_risk"><text>&quot;MEDIUM&quot;</text></outputEntry>
       </rule>
       <rule id="Rule_3">
-        <inputEntry id="InputEntry_3_amount"><text>&gt; 10000</text></inputEntry>
+        <inputEntry id="InputEntry_3_amount"><text>&gt; 5000</text></inputEntry>
         <inputEntry id="InputEntry_3_segment"><text>-</text></inputEntry>
         <outputEntry id="OutputEntry_3_risk"><text>&quot;HIGH&quot;</text></outputEntry>
       </rule>
