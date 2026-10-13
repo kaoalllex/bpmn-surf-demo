@@ -7,13 +7,13 @@ import org.camunda.bpm.client.task.ExternalTaskService
 import org.springframework.stereotype.Component
 
 @Component
-@ExternalTaskSubscription("checkFraud")
-class CheckFraudHandler(
-    private val fraudScoring: FraudScoring
+@ExternalTaskSubscription("applyExpressShipping")
+class ApplyExpressShippingHandler(
+    private val shipping: ShippingService
 ) : ExternalTaskHandler {
 
     override fun execute(task: ExternalTask, service: ExternalTaskService) {
-        fraudScoring.check(task.getVariable("orderId"))
+        shipping.upgradeToExpress(task.getVariable("orderId"))
         service.complete(task)
     }
 }

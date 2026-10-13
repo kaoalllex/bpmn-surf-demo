@@ -18,6 +18,7 @@
         <camunda:inputOutput>
           <camunda:inputParameter name="orderId">${orderId}</camunda:inputParameter>
           <camunda:inputParameter name="amount">${amount}</camunda:inputParameter>
+          <camunda:inputParameter name="currency">${currency}</camunda:inputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_p_ok</bpmn:incoming>
